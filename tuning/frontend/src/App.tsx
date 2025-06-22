@@ -14,6 +14,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ProfilePage from './pages/ProfilePage';
+import OrderCreatePage from './pages/OrderCreatePage';
+import OrderEditPage from './pages/OrderEditPage';
 
 function App() {
   return (
@@ -40,7 +42,8 @@ function App() {
             {/* Защищенные роуты */}
             <Route element={<ProtectedRoute />}>
               <Route path="/profile" element={<ProfilePage />} />
-              {/* Здесь можно будет добавлять другие защищенные страницы */}
+              <Route path="/orders/create" element={<OrderCreatePage />} />
+              <Route path="/orders/edit/:orderId" element={<OrderEditPage />} /> 
             </Route>
           </Routes>
         </main>

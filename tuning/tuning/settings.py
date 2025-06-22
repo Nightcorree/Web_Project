@@ -175,3 +175,7 @@ ACCOUNT_EMAIL_VERIFICATION = 'none'
 ACCOUNT_FORMS = {
     'signup': 'allauth.account.forms.SignupForm',
 }
+
+REST_AUTH = {
+    'LOGIN_SERIALIZER': 'atelier.serializers.CustomLoginSerializer',
+}

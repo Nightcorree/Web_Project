@@ -41,17 +41,35 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [token]);
 
   const login = async (data: any) => {
-    const response = await axios.post(API_URL + 'auth/login/', data);
-    const { key } = response.data;
-    localStorage.setItem('token', key);
-    axios.defaults.headers.common['Authorization'] = `Token ${key}`;
-    const userResponse = await axios.get(API_URL + 'users/me/');
-    setUser(userResponse.data);
+    try {
+      const response = await axios.post(API_URL + 'auth/login/', data);
+      const { key } = response.data;
+      localStorage.setItem('token', key);
+      axios.defaults.headers.common['Authorization'] = `Token ${key}`;
+      const userResponse = await axios.get(API_URL + 'users/me/');
+      setUser(userResponse.data);
+      // Возвращаем успех (можно ничего не возвращать)
+      return Promise.resolve(); 
+    } catch (error) {
+      // --- ИЗМЕНЕНИЕ ---
+      // Если произошла ошибка, пробрасываем ее дальше
+      return Promise.reject(error);
+    }
   };
 
   const register = async (data: any) => {
-    await axios.post(API_URL + 'auth/registration/', data);
-    await login({email: data.email, password: data.password});
+    try {
+      // Для регистрации нам не нужен ответ, мы просто логинимся после
+      await axios.post(API_URL + 'auth/registration/', data);
+      // После успешной регистрации сразу пытаемся войти
+      await login({ email: data.email, password: data.password });
+       // Возвращаем успех
+      return Promise.resolve();
+    } catch (error) {
+      // --- ИЗМЕНЕНИЕ ---
+      // Если произошла ошибка, пробрасываем ее дальше
+      return Promise.reject(error);
+    }
   };
 
   const logout = () => {

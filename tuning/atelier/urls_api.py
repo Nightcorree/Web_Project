@@ -13,4 +13,12 @@ urlpatterns = [
     path('services/all/', views_api.AllServicesListAPIView.as_view(), name='all-services-list'),
     path('blog/<int:pk>/', views_api.BlogPostDetailAPIView.as_view(), name='blog-post-detail'),
     path('users/me/', views_api.UserMeView.as_view(), name='user-me'),
+    path('orders/', views_api.OrderListAPIView.as_view(), name='order-list'),
+    path('orders/create/', views_api.OrderCreateAPIView.as_view(), name='order-create'),
+    path('form-data/clients/', views_api.ClientListAPIView.as_view()),
+    path('form-data/cars/', views_api.CarListAPIView.as_view()),
+    path('form-data/statuses/', views_api.StatusListAPIView.as_view()),
+    path('form-data/performers/', views_api.PerformerListAPIView.as_view()),
+    path('form-data/services/', views_api.ServiceListForOrderAPIView.as_view()),
+    path('orders/<int:pk>/', views_api.OrderDetailAPIView.as_view(), name='order-detail'),
 ]
