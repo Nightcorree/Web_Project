@@ -39,6 +39,13 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'atelier.apps.AtelierConfig',
     'rest_framework',
+    'rest_framework.authtoken',
+    'dj_rest_auth',
+    'django.contrib.sites', 
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'dj_rest_auth.registration',
     'corsheaders',
     'django_filters',
 ]
@@ -52,6 +59,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
 ]
 
 ROOT_URLCONF = 'tuning.urls'
@@ -140,15 +148,30 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOW_CREDENTIALS = True
 
 REST_FRAMEWORK = {
-    # 'DEFAULT_PERMISSION_CLASSES': [
-    #     'rest_framework.permissions.IsAuthenticated',
-    # ],
-    # 'DEFAULT_AUTHENTICATION_CLASSES': [
-    #     'rest_framework.authentication.SessionAuthentication',
-    # ]
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication', 
+    ],
     'PAGE_SIZE': 12,
 }
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+SITE_ID = 1
+
+# Указываем, что для логина используется email
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
+# Поля, которые запрашиваются при регистрации
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_USERNAME_REQUIRED = False
+# Убираем поле username из форм
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+# Отключаем подтверждение по email для простоты
+ACCOUNT_EMAIL_VERIFICATION = 'none'
+
+# Это можно добавить, чтобы явно указать, что мы не используем username
+# и убрать предупреждения, связанные с формой регистрации
+ACCOUNT_FORMS = {
+    'signup': 'allauth.account.forms.SignupForm',
+}

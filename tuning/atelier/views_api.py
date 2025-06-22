@@ -4,6 +4,8 @@ from .models import ServiceCategory, Service, PortfolioProject, BlogPost
 from .serializers import ServiceCategorySerializer, ServiceSerializer, PortfolioProjectSerializer, BlogPostSerializer, BlogPostDetailSerializer
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
+from dj_rest_auth.registration.views import RegisterView 
+from .serializers import RegisterSerializer, UserSerializer
 
 class ServiceCategoryListAPIView(generics.ListAPIView):
     queryset = ServiceCategory.objects.all()
@@ -17,7 +19,7 @@ class ServiceListAPIView(generics.ListAPIView):
 
 class RecentPortfolioProjectsAPIView(generics.ListAPIView):
     # Используем наш кастомный менеджер для получения опубликованных проектов
-    queryset = PortfolioProject.published.all()[:3] 
+    queryset = PortfolioProject.published.select_related('base_order', 'car').all()[:3] 
     serializer_class = PortfolioProjectSerializer
     pagination_class = None
 
@@ -57,3 +59,12 @@ class AllServicesListAPIView(generics.ListAPIView):
     filterset_fields = ['category', 'parent']
     
     search_fields = ['name', 'description']
+    
+class CustomRegisterView(RegisterView):
+    serializer_class = RegisterSerializer
+
+class UserMeView(generics.RetrieveAPIView):
+    serializer_class = UserSerializer
+    
+    def get_object(self):
+        return self.request.user

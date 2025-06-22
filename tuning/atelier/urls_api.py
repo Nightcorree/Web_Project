@@ -12,4 +12,5 @@ urlpatterns = [
     path('service-categories/', views_api.ServiceCategoryListAPIView.as_view(), name='service-category-list'),
     path('services/all/', views_api.AllServicesListAPIView.as_view(), name='all-services-list'),
     path('blog/<int:pk>/', views_api.BlogPostDetailAPIView.as_view(), name='blog-post-detail'),
+    path('users/me/', views_api.UserMeView.as_view(), name='user-me'),
 ]

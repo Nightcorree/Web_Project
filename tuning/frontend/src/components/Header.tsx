@@ -1,10 +1,11 @@
 // frontend/src/components/Header.tsx
 import React from 'react';
 import { Link, NavLink } from 'react-router-dom';
-// Для иконок установим библиотеку: npm install react-icons
 import { FaMapMarkerAlt, FaVk } from 'react-icons/fa';
+import { useAuth } from '../context/AuthContext';
 
 const Header: React.FC = () => {
+  const { user, logout } = useAuth();
   const linkStyles = "hover:text-primary-red transition-colors py-2";
   const activeLinkStyles = { color: '#FF0024', borderBottom: '2px solid #FF0024' };
 
@@ -22,7 +23,19 @@ const Header: React.FC = () => {
               <FaMapMarkerAlt className="text-primary-red" />
               <span>г. Москва</span>
             </div>
-            <a href="#" className="text-primary-red font-bold hover:text-red-400">Заказать обратный звонок</a>
+            <div>
+              {user ? (
+                  <div className="flex items-center space-x-4">
+                      <Link to="/profile" className="font-bold hover:text-primary-red">{user.email}</Link>
+                      <button onClick={logout} className="bg-primary-red py-2 px-4 text-sm rounded">Выйти</button>
+                  </div>
+              ) : (
+                  <div className="flex items-center space-x-2">
+                      <Link to="/login" className="py-2 px-4 text-sm">Войти</Link>
+                      <Link to="/register" className="bg-primary-red py-2 px-4 text-sm rounded">Регистрация</Link>
+                  </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

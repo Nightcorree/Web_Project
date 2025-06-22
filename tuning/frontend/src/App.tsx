@@ -10,6 +10,10 @@ import Footer from './components/Footer';
 import BlogPage from './pages/BlogPage';
 import ArticleDetailPage from './pages/ArticleDetailPage';
 import SearchPage from './pages/SearchPage'
+import ProtectedRoute from './components/ProtectedRoute';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import ProfilePage from './pages/ProfilePage';
 
 function App() {
   return (
@@ -30,10 +34,18 @@ function App() {
             <Route path="/blog/:articleId" element={<ArticleDetailPage />} />
             <Route path="/search" element={<SearchPage />} />
             {/* Здесь мы можем добавлять новые роуты для других страниц */}
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            
+            {/* Защищенные роуты */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/profile" element={<ProfilePage />} />
+              {/* Здесь можно будет добавлять другие защищенные страницы */}
+            </Route>
           </Routes>
         </main>
         
-        <Footer /> {/* <-- 2. Добавляем компонент сюда */}
+        <Footer /> 
       </div>
     </Router>
   );

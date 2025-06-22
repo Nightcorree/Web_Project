@@ -1,6 +1,39 @@
 # atelier/serializers.py
-from rest_framework import serializers
-from .models import ServiceCategory, Service, PortfolioProject, BlogPost 
+from rest_framework import serializers, generics
+from .models import ServiceCategory, Service, PortfolioProject, BlogPost, Role
+from django.contrib.auth import get_user_model
+
+
+
+User = get_user_model()
+
+
+class UserSerializer(serializers.ModelSerializer):
+    # Получаем названия ролей, а не их ID
+    roles = serializers.StringRelatedField(many=True, read_only=True)
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'full_name', 'phone_number', 'roles']
+
+
+class RegisterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('id', 'email', 'password', 'full_name')
+        extra_kwargs = {'password': {'write_only': True}} # Пароль не будет возвращаться в ответе
+
+    def create(self, validated_data):
+        # Создаем пользователя с хешированным паролем
+        user = User.objects.create_user(
+            validated_data['email'], 
+            validated_data['password'],
+            full_name=validated_data['full_name']
+        )
+        # По умолчанию присваиваем роль "Клиент"
+        client_role, _ = Role.objects.get_or_create(name='Клиент')
+        user.roles.add(client_role)
+        return user
+ 
 
 
 class ServiceCategorySerializer(serializers.ModelSerializer):
@@ -52,3 +85,5 @@ class BlogPostDetailSerializer(serializers.ModelSerializer):
         model = BlogPost
         # Включаем ПОЛНЫЙ 'content' и добавляем имя автора для наглядности
         fields = ['id', 'title', 'content', 'image_url', 'publication_date', 'author_name']
+        
+        
