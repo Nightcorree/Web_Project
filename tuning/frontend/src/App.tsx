@@ -16,6 +16,7 @@ import RegisterPage from './pages/RegisterPage';
 import ProfilePage from './pages/ProfilePage';
 import OrderCreatePage from './pages/OrderCreatePage';
 import OrderEditPage from './pages/OrderEditPage';
+import ReviewsPage from './pages/ReviewsPage';
 
 function App() {
   return (
@@ -32,10 +33,10 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/services" element={<ServicesPage />} />
             <Route path="/portfolio" element={<PortfolioPage />} />
+            <Route path="/reviews" element={<ReviewsPage />} />
             <Route path="/blog" element={<BlogPage />} />
             <Route path="/blog/:articleId" element={<ArticleDetailPage />} />
             <Route path="/search" element={<SearchPage />} />
-            {/* Здесь мы можем добавлять новые роуты для других страниц */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             

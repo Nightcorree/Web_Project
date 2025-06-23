@@ -50,6 +50,7 @@ const Header: React.FC = () => {
           <NavLink to="/services" className={linkStyles} style={({ isActive }) => isActive ? activeLinkStyles : undefined}>Услуги</NavLink>
           <NavLink to="/about" className={linkStyles} style={({ isActive }) => isActive ? activeLinkStyles : undefined}>О нас</NavLink>
           <NavLink to="/portfolio" className={linkStyles} style={({ isActive }) => isActive ? activeLinkStyles : undefined}>Наши работы</NavLink>
+          <NavLink to="/reviews" className={linkStyles} style={({ isActive }) => isActive ? activeLinkStyles : undefined}>Отзывы</NavLink>
           <NavLink to="/actions" className={linkStyles} style={({ isActive }) => isActive ? activeLinkStyles : undefined}>Акции</NavLink>
           <NavLink to="/blog" className={linkStyles} style={({ isActive }) => isActive ? activeLinkStyles : undefined}>Статьи</NavLink>
           <NavLink to="/contacts" className={linkStyles} style={({ isActive }) => isActive ? activeLinkStyles : undefined}>Контакты</NavLink>

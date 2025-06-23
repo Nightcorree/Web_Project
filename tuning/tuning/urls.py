@@ -9,6 +9,7 @@ urlpatterns = [
     path('api/v1/', include('atelier.urls_api')),
     path('api/v1/auth/', include('dj_rest_auth.urls')), 
     path('api/v1/auth/registration/', RegisterAPIView.as_view()),
+    path('silk/', include('silk.urls', namespace='silk')), 
 ]
 
 if settings.DEBUG:

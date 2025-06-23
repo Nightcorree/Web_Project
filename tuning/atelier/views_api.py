@@ -1,23 +1,25 @@
 # atelier/views_api.py
 from rest_framework import generics, status
-from .models import ServiceCategory, Service, PortfolioProject, BlogPost
-from .serializers import OrderCreateSerializer, OrderDetailSerializer, ServiceCategorySerializer, ServiceSerializer, PortfolioProjectSerializer, BlogPostSerializer, BlogPostDetailSerializer
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.filters import SearchFilter
-from dj_rest_auth.registration.views import RegisterView 
-from .serializers import UserSerializer, RegisterSerializer 
-from rest_framework.permissions import AllowAny 
-from .serializers import RegisterSerializer
+from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated # Нам понадобится этот permission
-from .models import Order # ...
-from .serializers import OrderSerializer, OrderCreateSerializer 
-from rest_framework.permissions import IsAdminUser
-from .models import User, ClientCar, OrderStatus, Role # ...
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
+from django_filters.rest_framework import DjangoFilterBackend
+from django.db.models import Avg
+
+from .models import (
+    ServiceCategory, Service, PortfolioProject, BlogPost,
+    Review, Order, User, ClientCar, OrderStatus, Role
+)
 from .serializers import (
-    SimpleUserSerializer, SimpleClientCarSerializer, 
-    SimpleOrderStatusSerializer, SimpleServiceSerializer
-) # ...
+    OrderCreateSerializer, OrderDetailSerializer, ServiceCategorySerializer,
+    ServiceSerializer, PortfolioProjectSerializer, BlogPostSerializer,
+    BlogPostDetailSerializer, UserSerializer, RegisterSerializer,
+    OrderSerializer, SimpleUserSerializer, SimpleClientCarSerializer,
+    SimpleOrderStatusSerializer, SimpleServiceSerializer,
+    ReviewSerializer, ReviewCreateSerializer
+)
+from .filters import ServiceFilter
+from .permissions import IsOwnerOrAdmin
 
 
 class ServiceCategoryListAPIView(generics.ListAPIView):
@@ -54,12 +56,6 @@ class BlogPostListAPIView(generics.ListAPIView):
     serializer_class = BlogPostSerializer
     pagination_class = None
 
-class AllServicesListAPIView(generics.ListAPIView):
-    queryset = Service.objects.all().order_by('parent_id', 'name')
-    serializer_class = ServiceSerializer
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['category', 'parent']
-
 class BlogPostDetailAPIView(generics.RetrieveAPIView):
     queryset = BlogPost.objects.all()
     serializer_class = BlogPostDetailSerializer
@@ -68,10 +64,12 @@ class AllServicesListAPIView(generics.ListAPIView):
     queryset = Service.objects.all().order_by('parent_id', 'name')
     serializer_class = ServiceSerializer
     
-    filter_backends = [DjangoFilterBackend, SearchFilter] # Добавляем SearchFilter
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['category', 'parent']
+    filterset_class = ServiceFilter
     
     search_fields = ['name', 'description']
+    ordering_fields = ['base_price', 'name']
     
 class RegisterAPIView(generics.GenericAPIView):
     """
@@ -196,3 +194,68 @@ class OrderDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
             return OrderCreateSerializer
         # Для GET запросов используем новый детальный сериализатор
         return OrderDetailSerializer
+    
+    
+class ReviewListCreateAPIView(generics.ListCreateAPIView):
+    """
+    API для получения списка отзывов и создания нового.
+    """
+    queryset = Review.objects.select_related('user', 'order').prefetch_related('order__order_items__service').all()
+    
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return ReviewCreateSerializer
+        return ReviewSerializer
+
+    def get_permissions(self):
+        # Для создания (POST) нужна аутентификация
+        if self.request.method == 'POST':
+            self.permission_classes = [IsAuthenticated]
+        else:
+            # Для просмотра (GET) разрешаем всем
+            self.permission_classes = [AllowAny]
+        return super().get_permissions()
+
+    def list(self, request, *args, **kwargs):
+        """Переопределяем метод, чтобы добавить средний рейтинг в ответ."""
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
+        
+        # Считаем средний рейтинг
+        avg_rating = Review.objects.all().aggregate(Avg('rating'))['rating__avg'] or 0
+        
+        # Собираем кастомный ответ
+        data = {
+            'average_rating': round(avg_rating, 2),
+            'reviews': serializer.data
+        }
+        return Response(data)
+
+class ReviewDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    API для просмотра, обновления и удаления отзыва.
+    """
+    queryset = Review.objects.all()
+    serializer_class = ReviewCreateSerializer
+    # Используем наше кастомное право доступа
+    permission_classes = [IsOwnerOrAdmin]
+
+class UserOrderListAPIView(generics.ListAPIView):
+    """
+    Возвращает список заказов ТЕКУЩЕГО пользователя, на которые
+    он может оставить отзыв (например, со статусом "Выполнен").
+    """
+    serializer_class = OrderSerializer # Можно создать более простой
+    permission_classes = [IsAuthenticated]
+    pagination_class = None
+    
+    def get_queryset(self):
+        user = self.request.user
+        # Находим ID заказов, на которые уже есть отзывы от этого пользователя
+        reviewed_orders_ids = Review.objects.filter(user=user).values_list('order_id', flat=True)
+        
+        # Возвращаем заказы пользователя со статусом "Выполнен", исключая те, на которые уже есть отзыв
+        return Order.objects.filter(
+            client=user, 
+            status__name="Завершен" 
+        ).exclude(id__in=reviewed_orders_ids)

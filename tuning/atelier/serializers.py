@@ -2,7 +2,7 @@
 from rest_framework import serializers
 from .models import (
     Order, ServiceCategory, Service, PortfolioProject, 
-    BlogPost, Role, OrderItem, User, ClientCar, OrderStatus
+    BlogPost, Role, OrderItem, User, ClientCar, OrderStatus, Review 
 )
 from django.contrib.auth import get_user_model
 from dj_rest_auth.serializers import LoginSerializer as DefaultLoginSerializer
@@ -281,3 +281,46 @@ class OrderDetailSerializer(serializers.ModelSerializer):
             'client_id', 'car_id', 'status_id', 'planned_completion_date', 
             'total_cost', 'client_comment'
         ]
+        
+
+class ReviewSerializer(serializers.ModelSerializer):
+    """Сериализатор для отображения списка отзывов."""
+    # Получаем строковые представления для удобства отображения
+    user = serializers.StringRelatedField()
+    # Мы покажем название первой услуги в заказе для простоты
+    order_info = serializers.SerializerMethodField()
+    # Добавляем ID пользователя для проверки прав на фронтенде
+    user_id = serializers.IntegerField(source='user.id', read_only=True)
+
+    class Meta:
+        model = Review
+        fields = ['id', 'user', 'user_id', 'order_info', 'rating', 'review_text', 'review_date']
+    
+    def get_order_info(self, obj):
+        # Для отзыва показываем ID заказа и название первой услуги
+        first_item = obj.order.order_items.first()
+        service_name = first_item.service.name if first_item else "Услуга не найдена"
+        return f"Заказ #{obj.order.id} ({service_name})"
+
+
+class ReviewCreateSerializer(serializers.ModelSerializer):
+    """Сериализатор для создания отзыва."""
+    # При создании отзыва, user будет браться из request'а, его не нужно передавать
+    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
+
+    class Meta:
+        model = Review
+        # Нам нужны только эти поля для создания
+        fields = ['id', 'order', 'rating', 'review_text', 'user']
+    
+    def validate_order(self, value):
+        """Проверяем, что пользователь оставляет отзыв на СВОЙ заказ."""
+        user = self.context['request'].user
+        if value.client != user:
+            raise serializers.ValidationError("Вы можете оставлять отзывы только на свои заказы.")
+        
+        # Проверяем, что на этот заказ еще нет отзыва от этого пользователя
+        if Review.objects.filter(order=value, user=user).exists():
+            raise serializers.ValidationError("Вы уже оставили отзыв на этот заказ.")
+            
+        return value

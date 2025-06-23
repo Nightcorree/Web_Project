@@ -3,8 +3,7 @@ from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 from django.contrib.auth.models import AbstractUser, BaseUserManager
-# from django.urls import reverse # Не нужен для админки
-# from django.utils.text import slugify # Не нужен, так как slug убран
+
 
 class CustomUserManager(BaseUserManager):
     """
@@ -255,7 +254,7 @@ class Review(models.Model):
     review_text = models.TextField(verbose_name="Текст отзыва")
     rating = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(5)],
-        verbose_name="Оценка (1-5)"
+        verbose_name="Оценка (1-5)" 
     )
     review_date = models.DateTimeField(auto_now_add=True, verbose_name="Дата отзыва")
 

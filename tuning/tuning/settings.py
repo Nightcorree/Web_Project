@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'dj_rest_auth.registration',
     'corsheaders',
     'django_filters',
+    'silk',
 ]
 
 MIDDLEWARE = [
@@ -55,6 +56,7 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'silk.middleware.SilkyMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -179,3 +181,12 @@ ACCOUNT_FORMS = {
 REST_AUTH = {
     'LOGIN_SERIALIZER': 'atelier.serializers.CustomLoginSerializer',
 }
+
+
+SILKY_IGNORE_PATHS = [
+    r'^/silk/',
+    r'^/admin/'
+]
+
+SILKY_META = True
+SILKY_PYTHON_PROFILER = True

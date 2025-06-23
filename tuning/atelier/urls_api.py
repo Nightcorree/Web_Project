@@ -21,4 +21,7 @@ urlpatterns = [
     path('form-data/performers/', views_api.PerformerListAPIView.as_view()),
     path('form-data/services/', views_api.ServiceListForOrderAPIView.as_view()),
     path('orders/<int:pk>/', views_api.OrderDetailAPIView.as_view(), name='order-detail'),
+    path('reviews/', views_api.ReviewListCreateAPIView.as_view(), name='review-list-create'),
+    path('reviews/<int:pk>/', views_api.ReviewDetailAPIView.as_view(), name='review-detail'),
+    path('form-data/my-orders-for-review/', views_api.UserOrderListAPIView.as_view(), name='my-orders-for-review'),
 ]
