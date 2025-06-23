@@ -17,7 +17,9 @@ from .models import User, ClientCar, OrderStatus, Role # ...
 from .serializers import (
     SimpleUserSerializer, SimpleClientCarSerializer, 
     SimpleOrderStatusSerializer, SimpleServiceSerializer
-) # ...
+) 
+from .models import MFexam
+from .serializers import MFexamSerializer
 
 
 class ServiceCategoryListAPIView(generics.ListAPIView):
@@ -196,3 +198,14 @@ class OrderDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
             return OrderCreateSerializer
         # Для GET запросов используем новый детальный сериализатор
         return OrderDetailSerializer
+    
+    
+# НОВЫЙ VIEW ДЛЯ СПИСКА ОПУБЛИКОВАННЫХ ЭКЗАМЕНОВ
+class MFexamListAPIView(generics.ListAPIView):
+    """
+    API для получения списка опубликованных экзаменов.
+    """
+    queryset = MFexam.objects.filter(is_public=True).prefetch_related('examinees')
+    serializer_class = MFexamSerializer
+    permission_classes = [AllowAny]
+    pagination_class = None

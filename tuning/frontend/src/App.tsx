@@ -16,6 +16,7 @@ import RegisterPage from './pages/RegisterPage';
 import ProfilePage from './pages/ProfilePage';
 import OrderCreatePage from './pages/OrderCreatePage';
 import OrderEditPage from './pages/OrderEditPage';
+import MFexamPage from './pages/MFexamPage';
 
 function App() {
   return (
@@ -38,6 +39,7 @@ function App() {
             {/* Здесь мы можем добавлять новые роуты для других страниц */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/mfexam" element={<MFexamPage />} />
             
             {/* Защищенные роуты */}
             <Route element={<ProtectedRoute />}>

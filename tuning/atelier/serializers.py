@@ -6,6 +6,7 @@ from .models import (
 )
 from django.contrib.auth import get_user_model
 from dj_rest_auth.serializers import LoginSerializer as DefaultLoginSerializer
+from .models import MFexam
 
 User = get_user_model()
 
@@ -280,4 +281,20 @@ class OrderDetailSerializer(serializers.ModelSerializer):
             'id', 'client', 'car', 'status', 'performers', 'order_items', 'urgency_code',
             'client_id', 'car_id', 'status_id', 'planned_completion_date', 
             'total_cost', 'client_comment'
+        ]
+        
+        
+# НОВЫЙ СЕРИАЛИЗАТОР ДЛЯ ЭКЗАМЕНОВ
+class MFexamSerializer(serializers.ModelSerializer):
+    examinees = serializers.StringRelatedField(many=True, read_only=True)
+    task_image_url = serializers.ImageField(source='task_image', read_only=True)
+    
+    class Meta:
+        model = MFexam
+        fields = [
+            'id', 
+            'title', 
+            'exam_date', 
+            'task_image_url', 
+            'examinees'
         ]

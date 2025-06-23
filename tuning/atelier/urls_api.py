@@ -21,4 +21,6 @@ urlpatterns = [
     path('form-data/performers/', views_api.PerformerListAPIView.as_view()),
     path('form-data/services/', views_api.ServiceListForOrderAPIView.as_view()),
     path('orders/<int:pk>/', views_api.OrderDetailAPIView.as_view(), name='order-detail'),
+    # НОВЫЙ URL ДЛЯ ЭКЗАМЕНОВ
+    path('mfexams/', views_api.MFexamListAPIView.as_view(), name='mfexam-list'),
 ]

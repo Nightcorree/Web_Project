@@ -53,6 +53,7 @@ const Header: React.FC = () => {
           <NavLink to="/actions" className={linkStyles} style={({ isActive }) => isActive ? activeLinkStyles : undefined}>Акции</NavLink>
           <NavLink to="/blog" className={linkStyles} style={({ isActive }) => isActive ? activeLinkStyles : undefined}>Статьи</NavLink>
           <NavLink to="/contacts" className={linkStyles} style={({ isActive }) => isActive ? activeLinkStyles : undefined}>Контакты</NavLink>
+          <NavLink to="/mfexam" className={linkStyles} style={({ isActive }) => isActive ? activeLinkStyles : undefined}>Экзамен</NavLink>
         </nav>
         <div className="md:hidden">
           {/* Mobile menu button */}
