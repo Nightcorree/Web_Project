@@ -8,7 +8,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/v1/', include('atelier.urls_api')),
     path('api/v1/auth/', include('dj_rest_auth.urls')), 
-    path('api/v1/auth/registration/', RegisterAPIView.as_view()),
+    path('api/v1/auth/registration/', RegisterAPIView.as_view(), name='register-api'),
     path('silk/', include('silk.urls', namespace='silk')), 
 ]
 

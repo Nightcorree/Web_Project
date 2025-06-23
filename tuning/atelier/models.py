@@ -3,16 +3,26 @@ from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 from django.contrib.auth.models import AbstractUser, BaseUserManager
-
+from typing import Optional, List
 
 class CustomUserManager(BaseUserManager):
     """
     Кастомный менеджер для модели User, где email является уникальным
     идентификатором для аутентификации вместо username.
     """
-    def create_user(self, email, password, **extra_fields):
-        """
-        Создает и сохраняет пользователя с указанным email и паролем.
+    def create_user(self, email: str, password: str, **extra_fields) -> "User":
+        """Создает и сохраняет пользователя с указанным email и паролем.
+
+        Args:
+            email (str): Email пользователя.
+            password (str): Пароль пользователя.
+            **extra_fields: Дополнительные поля.
+
+        Returns:
+            User: Созданный объект пользователя.
+
+        Raises:
+            ValueError: Если email не предоставлен.
         """
         if not email:
             raise ValueError('Поле Email должно быть установлено')
@@ -22,9 +32,19 @@ class CustomUserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, email, password, **extra_fields):
-        """
-        Создает и сохраняет суперпользователя с указанным email и паролем.
+    def create_superuser(self, email: str, password: str, **extra_fields) -> "User":
+        """Создает и сохраняет суперпользователя с указанным email и паролем.
+
+        Args:
+            email (str): Email суперпользователя.
+            password (str): Пароль суперпользователя.
+            **extra_fields: Дополнительные поля.
+
+        Returns:
+            User: Созданный объект суперпользователя.
+        
+        Raises:
+            ValueError: Если is_staff или is_superuser не равны True.
         """
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
@@ -38,6 +58,7 @@ class CustomUserManager(BaseUserManager):
 
 
 class User(AbstractUser):
+    """Модель кастомного пользователя."""
     username = None 
     email = models.EmailField(unique=True, verbose_name="Email")
     
@@ -47,14 +68,13 @@ class User(AbstractUser):
     phone_number = models.CharField(max_length=20, blank=True, null=True, verbose_name="Телефон")
     roles = models.ManyToManyField('Role', blank=True, verbose_name="Роли")
 
-    # --- Вот важные изменения ---
-    objects = CustomUserManager() # Подключаем наш кастомный менеджер
+    objects = CustomUserManager()
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['full_name']
-    # -----------------------------
  
-    def __str__(self):
+    def __str__(self) -> str:
+        """Возвращает строковое представление пользователя."""
         return self.full_name or self.email
 
     class Meta:
@@ -64,9 +84,11 @@ class User(AbstractUser):
 
 
 class Role(models.Model):
+    """Модель роли пользователя (Клиент, Администратор и т.д.)."""
     name = models.CharField(max_length=100, unique=True, verbose_name="Название роли")
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """Возвращает строковое представление роли."""
         return self.name
 
     class Meta:
@@ -76,9 +98,11 @@ class Role(models.Model):
 
 
 class ServiceCategory(models.Model):
+    """Модель категории услуг."""
     name = models.CharField(max_length=150, unique=True, verbose_name="Название категории")
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """Возвращает строковое представление категории услуг."""
         return self.name
 
     class Meta:
@@ -88,31 +112,38 @@ class ServiceCategory(models.Model):
 
 
 class Service(models.Model):
+    """Модель услуги, предоставляемой ателье."""
     name = models.CharField(max_length=200, verbose_name="Название услуги")
     description = models.TextField(blank=True, null=True, verbose_name="Описание")
     base_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Базовая цена")
     category = models.ForeignKey(ServiceCategory, on_delete=models.PROTECT, verbose_name="Категория")
 
     parent = models.ForeignKey(
-    'self', 
-    on_delete=models.CASCADE, 
-    null=True, 
-    blank=True, 
-    related_name='sub_services',
-    verbose_name="Родительская услуга"
+        'self', 
+        on_delete=models.CASCADE, 
+        null=True, 
+        blank=True, 
+        related_name='sub_services',
+        verbose_name="Родительская услуга"
     )
 
     promotional_price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True, verbose_name="Акционная цена")
     promotion_ends_on = models.DateField(blank=True, null=True, verbose_name="Акция действует до")
 
-    def is_special_offer_active(self):
+    def is_special_offer_active(self) -> bool:
+        """Проверяет, активна ли акция на данный момент.
+
+        Returns:
+            bool: True, если акция активна, иначе False.
+        """
         if self.promotional_price is not None and self.promotion_ends_on is not None:
             return timezone.now().date() <= self.promotion_ends_on
         return False
     is_special_offer_active.boolean = True
-    is_special_offer_active.short_description = "Акция активна?" # Русский description
+    is_special_offer_active.short_description = "Акция активна?"
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """Возвращает строковое представление услуги."""
         return self.name
 
     class Meta:
@@ -122,13 +153,15 @@ class Service(models.Model):
 
 
 class ClientCar(models.Model):
+    """Модель автомобиля клиента."""
     owner = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Владелец")
     make = models.CharField(max_length=100, verbose_name="Марка")
     model = models.CharField(max_length=100, verbose_name="Модель")
     year_of_manufacture = models.PositiveSmallIntegerField(verbose_name="Год выпуска")
     vin_number = models.CharField(max_length=17, unique=True, blank=True, null=True, verbose_name="VIN-номер")
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """Возвращает строковое представление автомобиля."""
         return f"{self.make} {self.model} ({self.year_of_manufacture})"
 
     class Meta:
@@ -138,9 +171,11 @@ class ClientCar(models.Model):
 
 
 class OrderStatus(models.Model):
+    """Модель статуса заказа (например, "В работе", "Завершен")."""
     name = models.CharField(max_length=100, unique=True, verbose_name="Название статуса")
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """Возвращает строковое представление статуса."""
         return self.name
 
     class Meta:
@@ -150,6 +185,7 @@ class OrderStatus(models.Model):
 
 
 class Order(models.Model):
+    """Модель заказа на выполнение работ."""
     client = models.ForeignKey(User, on_delete=models.PROTECT, verbose_name="Клиент", related_name="created_orders")
     car = models.ForeignKey(ClientCar, on_delete=models.PROTECT, verbose_name="Автомобиль")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
@@ -166,6 +202,7 @@ class Order(models.Model):
     )
 
     class Urgency(models.TextChoices):
+        """Перечисление уровней срочности заказа."""
         NORMAL = 'NRM', 'Обычная' 
         URGENT = 'URG', 'Срочная'
         VERY_URGENT = 'VUR', 'Очень срочная (вне очереди)'
@@ -177,8 +214,8 @@ class Order(models.Model):
         verbose_name="Срочность заказа"
     )
 
-    def __str__(self):
-        
+    def __str__(self) -> str:
+        """Возвращает строковое представление заказа."""
         return f"Заказ №{self.pk} от {self.created_at.strftime('%d.%m.%Y')}"
 
     class Meta:
@@ -188,13 +225,15 @@ class Order(models.Model):
 
 
 class OrderItem(models.Model):
+    """Модель позиции в заказе (конкретная услуга)."""
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="order_items", verbose_name="Заказ")
     service = models.ForeignKey(Service, on_delete=models.PROTECT, verbose_name="Услуга")
     item_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Цена позиции")
     item_comment = models.TextField(blank=True, null=True, verbose_name="Комментарий к позиции")
     quantity = models.PositiveSmallIntegerField(default=1, verbose_name="Количество")
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """Возвращает строковое представление позиции заказа."""
         return f"{self.service.name} для заказа №{self.order.pk}"
 
     class Meta:
@@ -204,11 +243,13 @@ class OrderItem(models.Model):
 
 
 class OrderPerformer(models.Model):
+    """Промежуточная модель для связи Заказа и Исполнителя."""
     order = models.ForeignKey(Order, on_delete=models.CASCADE, verbose_name="Заказ")
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Исполнитель")
     role_in_order = models.CharField(max_length=100, blank=True, null=True, verbose_name="Роль сотрудника в заказе")
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """Возвращает строковое представление связи."""
         return f"{self.user.full_name} - исполнитель заказа №{self.order.pk}"
 
     class Meta:
@@ -218,18 +259,26 @@ class OrderPerformer(models.Model):
 
 
 class PortfolioProjectManager(models.Manager):
+    """Кастомный менеджер для проектов портфолио."""
     def get_queryset(self):
+        """Возвращает только опубликованные и корректно заполненные проекты."""
         return super().get_queryset().filter(
             base_order__isnull=False,
             car__isnull=False,
             publication_date__lte=timezone.now().date() 
         ).order_by('-publication_date')
 
-    def recent_projects(self, count=3):
+    def recent_projects(self, count: int = 3):
+        """Возвращает несколько последних опубликованных проектов.
+
+        Args:
+            count (int): Количество проектов для возврата.
+        """
         return self.get_queryset()[:count]
 
 
 class PortfolioProject(models.Model):
+    """Модель проекта в портфолио."""
     project_name = models.CharField(max_length=200, verbose_name="Название проекта")
     work_description = models.TextField(verbose_name="Описание доработок")
     image = models.ImageField(upload_to='portfolio_images/', blank=True, null=True, verbose_name="Изображение проекта")
@@ -240,7 +289,8 @@ class PortfolioProject(models.Model):
     objects = models.Manager()
     published = PortfolioProjectManager()
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """Возвращает строковое представление проекта."""
         return self.project_name
 
     class Meta:
@@ -249,16 +299,18 @@ class PortfolioProject(models.Model):
 
 
 class Review(models.Model):
+    """Модель отзыва клиента на заказ."""
     order = models.ForeignKey(Order, on_delete=models.CASCADE, verbose_name="Заказ")
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Автор отзыва")
     review_text = models.TextField(verbose_name="Текст отзыва")
     rating = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(5)],
-        verbose_name="Оценка (1-5)" 
+        verbose_name="Оценка (1-5)"
     )
     review_date = models.DateTimeField(auto_now_add=True, verbose_name="Дата отзыва")
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """Возвращает строковое представление отзыва."""
         return f"Отзыв от {self.user.full_name} для заказа №{self.order.pk}"
 
     class Meta:
@@ -268,13 +320,15 @@ class Review(models.Model):
 
 
 class BlogPost(models.Model):
+    """Модель статьи в блоге."""
     title = models.CharField(max_length=255, verbose_name="Заголовок")
     content = models.TextField(verbose_name="Содержание")
     image = models.ImageField(upload_to='blog_images/', blank=True, null=True, verbose_name="Изображение для статьи")
     publication_date = models.DateTimeField(default=timezone.now, verbose_name="Дата публикации")
     author = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Автор")
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """Возвращает строковое представление статьи."""
         return self.title
 
     class Meta:
