@@ -3,8 +3,7 @@ from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 from django.contrib.auth.models import AbstractUser, BaseUserManager
-# from django.urls import reverse # Не нужен для админки
-# from django.utils.text import slugify # Не нужен, так как slug убран
+from django.conf import settings
 
 class CustomUserManager(BaseUserManager):
     """
@@ -282,3 +281,35 @@ class BlogPost(models.Model):
         verbose_name = "Статья блога"
         verbose_name_plural = "Статьи блога"
         ordering = ['-publication_date']
+        
+
+
+## ЭКЗАМЕН
+class MFexam(models.Model): 
+    """
+    Модель для хранения информации об экзаменах.
+    """
+    title = models.CharField(max_length=250, verbose_name="Название экзамена")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания записи")
+    exam_date = models.DateTimeField(verbose_name="Дата и время проведения экзамена")
+    task_image = models.ImageField(
+        upload_to='exam_tasks/', 
+        blank=True, 
+        null=True, 
+        verbose_name="Изображение с заданием"
+    )
+    examinees = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        related_name="mfexams_to_take", 
+        verbose_name="Участники экзамена",
+        blank=True
+    )
+    is_public = models.BooleanField(default=False, verbose_name="Опубликовано")
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        verbose_name = "Экзамен (MF)" 
+        verbose_name_plural = "Экзамены (MF)"
+        ordering = ['-exam_date']

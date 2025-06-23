@@ -8,7 +8,7 @@ from django.utils import timezone
 from .models import (
     User, Role, ServiceCategory, Service, ClientCar,
     OrderStatus, Order, OrderItem, OrderPerformer,
-    PortfolioProject, Review, BlogPost
+    PortfolioProject, Review, BlogPost, MFexam 
 )
 
 @admin.register(User)
@@ -310,3 +310,11 @@ class BlogPostAdmin(admin.ModelAdmin):
             local_dt = timezone.localtime(obj.publication_date)
             return local_dt.strftime("%d.%m.%Y %H:%M")
         return "-"
+    
+    
+@admin.register(MFexam) 
+class MFexamAdmin(admin.ModelAdmin): 
+    list_display = ('id', 'title', 'exam_date', 'is_public', 'created_at')
+    list_filter = ('is_public', 'exam_date')
+    search_fields = ('title',)
+    filter_horizontal = ('examinees',)
