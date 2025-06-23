@@ -312,9 +312,24 @@ class BlogPostAdmin(admin.ModelAdmin):
         return "-"
     
     
-@admin.register(MFexam) 
-class MFexamAdmin(admin.ModelAdmin): 
+@admin.register(MFexam)
+class MFexamAdmin(admin.ModelAdmin):
     list_display = ('id', 'title', 'exam_date', 'is_public', 'created_at')
-    list_filter = ('is_public', 'exam_date')
-    search_fields = ('title',)
+    search_fields = ('title', 'examinees__email')
+    date_hierarchy = 'exam_date'
     filter_horizontal = ('examinees',)
+    list_filter = ('is_public', 'created_at')
+
+    fieldsets = (
+        (None, {
+            'fields': ('title', 'exam_date', 'is_public')
+        }),
+        ('Задание и участники', {
+            'fields': ('task_image', 'examinees')
+        }),
+        ('Системная информация', {
+            'fields': ('created_at',),
+            'classes': ('collapse',) 
+        }),
+    )
+    readonly_fields = ('created_at',) 
