@@ -111,7 +111,7 @@ class CoreAPITests(APITestCase):
 
     def test_7_create_review_for_another_user_order_forbidden(self):
         """7. Тест: Пользователь не может создать отзыв на чужой заказ."""
-        self.client.force_authenticate(user=self.another_user) # Логинимся под другим пользователем
+        self.client.force_authenticate(user=self.another_user) 
         data = {'order': self.order_with_review.id, 'rating': 1, 'review_text': 'Пытаюсь оставить отзыв на чужой заказ'}
         response = self.client.post(self.reviews_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -134,7 +134,7 @@ class CoreAPITests(APITestCase):
     
     def test_10_delete_another_user_review_forbidden(self):
         """10. Тест: Пользователь не может удалить чужой отзыв."""
-        self.client.force_authenticate(user=self.another_user) # Логинимся под другим пользователем
+        self.client.force_authenticate(user=self.another_user) 
         url = reverse('review-detail', kwargs={'pk': self.review.id})
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

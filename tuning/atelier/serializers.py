@@ -74,7 +74,7 @@ class ServiceCategorySerializer(serializers.ModelSerializer):
 
 class ServiceSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source='category.name', read_only=True)
-    is_on_sale_for_user = serializers.SerializerMethodField() # Оставил для примера контекста
+    is_on_sale_for_user = serializers.SerializerMethodField() 
     class Meta:
         model = Service
         fields = ['id', 'name', 'description', 'base_price', 'promotional_price', 'category_name', 'is_on_sale_for_user']

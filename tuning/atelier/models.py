@@ -67,6 +67,12 @@ class User(AbstractUser):
     full_name = models.CharField(max_length=255, verbose_name="ФИО", blank=True)
     phone_number = models.CharField(max_length=20, blank=True, null=True, verbose_name="Телефон")
     roles = models.ManyToManyField('Role', blank=True, verbose_name="Роли")
+    
+    social_link = models.URLField(
+        max_length=200, 
+        blank=True, 
+        verbose_name="Ссылка на соцсеть"
+    )
 
     objects = CustomUserManager()
     
@@ -199,6 +205,20 @@ class Order(models.Model):
         verbose_name="Исполнители",
         related_name="executed_orders",
         blank=True
+    )
+    
+    image = models.ImageField(
+        upload_to='service_images/', 
+        blank=True, 
+        null=True, 
+        verbose_name="Изображение услуги"
+    )
+    
+    work_report = models.FileField(
+        upload_to='order_reports/', 
+        blank=True, 
+        null=True, 
+        verbose_name="Отчет по работам"
     )
 
     class Urgency(models.TextChoices):

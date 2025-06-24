@@ -13,6 +13,16 @@ from .models import (
     PortfolioProject, Review, BlogPost
 )
 
+from django.http import HttpResponse
+from django.utils.html import format_html
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import cm
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from django.conf import settings
+import os
+
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
     """Админ-панель для модели User."""
@@ -20,6 +30,64 @@ class UserAdmin(admin.ModelAdmin):
     search_fields = ('full_name', 'email', 'phone_number')
     list_filter = ('roles',)
     filter_horizontal = ('roles',)
+    
+    actions = ['analyze_and_modify_users']
+    
+    fieldsets = (
+        (None, {'fields': ('email', 'password')}),
+        ('Персональная информация', {'fields': ('full_name', 'phone_number', 'social_link')}), # <-- Добавили social_link
+        ('Права доступа', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
+        ('Роли в системе', {'fields': ('roles',)}),
+        ('Важные даты', {'fields': ('last_login', 'date_joined')}),
+    )
+    
+    
+    @admin.action(description="Проанализировать и модифицировать выбранных пользователей")
+    def analyze_and_modify_users(self, request: HttpRequest, queryset: QuerySet[User]) -> None:
+        """
+        Комплексное действие для демонстрации различных методов ORM.
+        """
+        
+        # 1. Демонстрация exists()
+        # Проверяем, есть ли среди выбранных неактивные пользователи
+        if queryset.filter(is_active=False).exists():
+            self.message_user(request, "Внимание: Среди выбранных есть неактивные пользователи.", messages.WARNING)
+        
+        # 2. Демонстрация __icontains и count()
+        # Ищем пользователей, у которых в имени есть "иван" (без учета регистра)
+        users_with_ivan_count = queryset.filter(full_name__icontains='иван').count()
+        if users_with_ivan_count > 0:
+            self.message_user(request, f"Найдено пользователей с именем 'Иван': {users_with_ivan_count} шт.", messages.INFO)
+            
+        # 3. Демонстрация values()
+        # Получаем словари с email и ролями. Вывод будет в консоли сервера.
+        # Обратите внимание, как __ для получения поля из связанной модели.
+        users_data = queryset.values('email', 'roles__name')
+        print("\n--- Данные выбранных пользователей (метод values) ---")
+        for data in users_data:
+            print(data)
+
+        # 4. Демонстрация values_list()
+        # Получаем "плоский" список всех email адресов выбранных пользователей.
+        email_list = queryset.values_list('email', flat=True)
+        print("\n--- Список email выбранных пользователей (метод values_list) ---")
+        print(list(email_list))
+
+        # 5. Демонстрация update()
+        # Для всех выбранных пользователей, у кого не заполнена ссылка на соцсеть,
+        # устанавливаем заглушку. Метод update() возвращает количество обновленных записей.
+        updated_count = queryset.filter(social_link='').update(social_link='http://example.com/placeholder')
+        self.message_user(request, f"Обновлено профилей без соцсети: {updated_count} шт.", messages.SUCCESS)
+
+        # 6. Демонстрация delete()
+        # ИСПРАВЛЕНИЕ 2: Удаляем неактивных пользователей (is_active=False),
+        # у которых нет заказов. Исключаем суперпользователей для безопасности.
+        users_to_delete = queryset.filter(is_active=False, is_superuser=False, created_orders__isnull=True)
+        if users_to_delete.exists():
+            deleted_count, _ = users_to_delete.delete()
+            self.message_user(request, f"Удалено неактивных пользователей без заказов: {deleted_count} шт.", messages.ERROR)
+        else:
+             self.message_user(request, "Не найдено неактивных пользователей без заказов для удаления.", messages.INFO)
 
     @admin.display(description='Роли', ordering='roles__name') 
     def display_roles(self, obj: User) -> str:
@@ -140,11 +208,11 @@ class OrderAdmin(admin.ModelAdmin):
     readonly_fields = ('display_created_at_on_form', 'display_calculated_total_cost')
     list_select_related = ('client', 'car', 'status')
     list_display_links = ('id', 'display_client_link')
-    actions = ['calculate_total_sum_for_selected_orders']
+    actions = ['calculate_total_sum_for_selected_orders', 'generate_order_pdf_action']
 
     fieldsets = ( 
         (None, {
-            'fields': ('client', 'car', 'status', 'urgency')
+            'fields': ('client', 'car', 'status', 'urgency', 'image', 'work_report')
         }),
         ('Даты', {
             'fields': ('display_created_at_on_form', 'planned_completion_date'),
@@ -231,6 +299,65 @@ class OrderAdmin(admin.ModelAdmin):
             self.message_user(request, f"Общая итоговая стоимость для выбранных заказов: {total:.2f} руб.", messages.SUCCESS)
         else:
             self.message_user(request, "Не удалось рассчитать общую стоимость (возможно, стоимость не указана).", messages.WARNING)
+            
+    @admin.action(description="Сформировать PDF для заказа")
+    def generate_order_pdf_action(self, request: HttpRequest, queryset: QuerySet[Order]) -> HttpResponse | None:
+        """
+        Действие для генерации PDF-документа с деталями заказа.
+        Работает только для одного выбранного заказа.
+        """
+        if queryset.count() != 1:
+            self.message_user(request, "Пожалуйста, выберите только один заказ для генерации PDF.", messages.WARNING)
+            return
+
+        order = queryset.first()
+        
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="order_{order.id}.pdf"'
+
+        try:
+            # Строим абсолютный путь к файлу шрифта
+            font_path = os.path.join(settings.BASE_DIR, 'atelier', 'static', 'atelier', 'fonts', 'DejaVuSans.ttf')
+            pdfmetrics.registerFont(TTFont('DejaVuSans', font_path))
+            font_name = 'DejaVuSans'
+        except Exception:
+            # Если шрифт не найден, используем стандартный
+            self.message_user(request, "Шрифт DejaVuSans не найден, текст может отображаться некорректно.", messages.WARNING)
+            font_name = 'Helvetica'
+
+
+        p = canvas.Canvas(response, pagesize=letter)
+        p.setFont(font_name, 12)
+
+        p.drawString(2*cm, 25*cm, f"Заказ-наряд №: {order.id}")
+        p.drawString(2*cm, 24*cm, f"Дата создания: {order.created_at.strftime('%d.%m.%Y')}")
+        p.line(2*cm, 23.5*cm, 19*cm, 23.5*cm)
+
+        p.drawString(2*cm, 22.5*cm, f"Клиент: {order.client.full_name}")
+        p.drawString(2*cm, 22*cm, f"Автомобиль: {order.car}")
+        p.drawString(2*cm, 21.5*cm, f"Статус: {order.status.name}")
+        p.line(2*cm, 21*cm, 19*cm, 21*cm)
+
+        p.drawString(2*cm, 20*cm, "Перечень работ/услуг:")
+        y = 19.5
+        for item in order.order_items.all():
+            p.drawString(2.5*cm, y*cm, f"- {item.service.name} (x{item.quantity})")
+            y -= 0.7
+            if y < 3:
+                p.showPage()
+                p.setFont(font_name, 12)
+                y = 25
+
+        y -= 1
+        p.line(2*cm, y*cm, 19*cm, y*cm)
+        y -= 1
+        p.setFont(font_name, 14)
+        p.drawString(12*cm, y*cm, f"Итого: {order.total_cost} руб.")
+
+        p.showPage()
+        p.save()
+        
+        return response
 
 
 @admin.register(OrderStatus)

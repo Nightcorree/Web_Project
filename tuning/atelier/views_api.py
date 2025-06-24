@@ -130,7 +130,7 @@ class OrderListAPIView(generics.ListAPIView):
         
         queryset = Order.objects.select_related('client', 'car', 'status').prefetch_related('performers')
 
-        if user.is_staff or user.roles.filter(name='Администратор').exists():
+        if user.roles.filter(name='Администратор').exists():
             return queryset.all()
         
         elif user.roles.filter(name='Автомеханик').exists():

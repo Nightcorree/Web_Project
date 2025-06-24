@@ -172,8 +172,7 @@ ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 # Отключаем подтверждение по email для простоты
 ACCOUNT_EMAIL_VERIFICATION = 'none'
 
-# Это можно добавить, чтобы явно указать, что мы не используем username
-# и убрать предупреждения, связанные с формой регистрации
+
 ACCOUNT_FORMS = {
     'signup': 'allauth.account.forms.SignupForm',
 }
